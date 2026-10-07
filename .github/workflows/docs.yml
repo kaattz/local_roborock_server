@@ -1,15 +1,9 @@
 name: docs
 
+# Fork: this deployed the project's documentation site to GitHub Pages. A fork
+# has no Pages site configured, so the deploy step fails on every push. Kept as
+# a manual trigger for anyone who does enable Pages.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/docs.yml
-      - docs/**
-      - mkdocs.yml
-      - pyproject.toml
-      - uv.lock
   workflow_dispatch:
 
 permissions:

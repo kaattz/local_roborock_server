@@ -3,8 +3,8 @@ version: "1.1.0-rc2"
 slug: roborock_local_server_beta
 description: Currently unused. Install Roborock Local Server for the stable release.
 stage: experimental
-url: "https://github.com/Python-roborock/local_roborock_server"
-image: "ghcr.io/python-roborock/local_roborock_server"
+url: "https://github.com/kaattz/local_roborock_server"
+image: "ghcr.io/kaattz/local_roborock_server"
 startup: services
 boot: manual
 init: false

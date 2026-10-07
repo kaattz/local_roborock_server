@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.1
+
+- Fixed routines that start cleaning immediately, such as "vacuum and mop", doing nothing. The repeat count was sent in a form the vacuum rejects, and because that command runs just before the start command, the rejection aborted the routine before the vacuum was told to start. Reported on a G20S Ultra (`roborock.vacuum.a143`, firmware `02.52.78`).
+
 ## 1.2.0
 
 - Added onboarding for vacuums that have never been on the Roborock cloud: choose **New vacuum** in the guided CLI or GUI. The server adopts the vacuum from its own onboarding traffic and adds it to the inventory as soon as it registers, with its model, product name, and product id taken from a built-in catalog of Roborock robot vacuums.
