@@ -45,7 +45,9 @@ jobs:
 
   docker-validate:
     needs: test
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    # A dispatch publishes (docker-release below), so only PRs need the
+    # build-without-push check here.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -66,7 +68,7 @@ jobs:
 
   docker-release:
     needs: test
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -82,14 +84,15 @@ jobs:
         with:
           python-version-file: pyproject.toml
 
-      - name: Validate release tag matches package version
+      - name: Resolve version
+        id: version
         shell: python
         run: |
+          import os
           import re
           import tomllib
           from pathlib import Path
 
-          tag = "${{ github.event.release.tag_name }}"
           pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
           project_version = str(pyproject["project"]["version"]).strip()
 
@@ -99,13 +102,23 @@ jobs:
               raise SystemExit("Could not find __version__ in src/roborock_local_server/__init__.py")
 
           module_version = match.group(1).strip()
-          expected_tag = f"v{project_version}"
           if module_version != project_version:
               raise SystemExit(
                   f"Version mismatch: pyproject.toml={project_version}, __init__.py={module_version}"
               )
-          if tag != expected_tag:
-              raise SystemExit(f"Git tag {tag} does not match package version {expected_tag}")
+
+          expected_tag = f"v{project_version}"
+          # A release event carries the tag it was published for and it must agree
+          # with the package. A manual run has no release event, so the package
+          # version defines the tag instead of leaving the image untagged.
+          release_tag = "${{ github.event.release.tag_name }}" or expected_tag
+          if release_tag != expected_tag:
+              raise SystemExit(f"Git tag {release_tag} does not match package version {expected_tag}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"tag={expected_tag}\n")
+              handle.write(f"version={project_version}\n")
+              handle.write(f"prerelease={'true' if '-' in project_version else 'false'}\n")
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -127,14 +140,14 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           flavor: latest=false
           tags: |
-            type=semver,pattern={{version}},value=${{ github.event.release.tag_name }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ github.event.release.tag_name }},enable=${{ !github.event.release.prerelease && !contains(github.event.release.tag_name, '-') }}
-            type=semver,pattern={{major}},value=${{ github.event.release.tag_name }},enable=${{ !github.event.release.prerelease && !contains(github.event.release.tag_name, '-') }}
-            type=raw,value=latest,enable=${{ !github.event.release.prerelease && startsWith(github.event.release.tag_name, 'v') && !contains(github.event.release.tag_name, '-') }}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.tag }},enable=${{ steps.version.outputs.prerelease == 'false' }}
+            type=semver,pattern={{major}},value=${{ steps.version.outputs.tag }},enable=${{ steps.version.outputs.prerelease == 'false' }}
+            type=raw,value=latest,enable=${{ steps.version.outputs.prerelease == 'false' }}
             type=sha,prefix=sha-
           labels: |
             org.opencontainers.image.title=roborock-local-server
-            org.opencontainers.image.source=https://github.com/python-roborock/local_roborock_server
+            org.opencontainers.image.source=https://github.com/kaattz/local_roborock_server
             org.opencontainers.image.description=Private Roborock HTTPS and MQTT stack for local LAN use
             org.opencontainers.image.licenses=MIT
 
