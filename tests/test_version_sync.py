@@ -35,7 +35,10 @@ def test_stable_addon_never_selects_a_prerelease_image() -> None:
     version = Version(addon["version"])
     assert not version.is_prerelease and not version.is_devrelease
     assert addon["slug"] == "roborock_local_server"
-    assert addon["image"] == "ghcr.io/python-roborock/local_roborock_server"
+    # The image follows the repository the add-on points at, so a fork publishes
+    # to its own namespace rather than silently installing upstream's image.
+    owner = addon["url"].rstrip("/").split("github.com/")[-1].split("/")[0]
+    assert addon["image"] == f"ghcr.io/{owner}/local_roborock_server"
 
 
 def test_beta_addon_requires_a_separate_opt_in_installation() -> None:

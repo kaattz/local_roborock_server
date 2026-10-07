@@ -1,3 +1,5 @@
-name: Roborock Local Server Apps
-url: "https://github.com/Python-roborock/local_roborock_server"
-maintainer: Luke Lashley
+name: Roborock Local Server Apps (kaattz fork)
+url: "https://github.com/kaattz/local_roborock_server"
+maintainer: kaattz
+# Fork of https://github.com/Python-roborock/local_roborock_server, carrying a
+# fix for routines that start cleaning immediately doing nothing.

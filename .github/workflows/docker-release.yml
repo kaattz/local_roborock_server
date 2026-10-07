@@ -9,7 +9,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: python-roborock/local_roborock_server
+  # Derived from the repository owner so a fork publishes to its own namespace
+  # instead of trying (and failing) to push to the upstream one.
+  IMAGE_NAME: ${{ github.repository_owner }}/local_roborock_server
 
 permissions:
   contents: read
